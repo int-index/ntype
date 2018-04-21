@@ -70,6 +70,24 @@ data N :: (Type -> Type -> Type) -> (k -> Type) -> [k] -> Type where
   Base :: !(IdentityElement tensor) -> N tensor f '[]
   Step :: !(tensor (f x) (N tensor f xs)) -> N tensor f (x:xs)
 
+instance Eq (IdentityElement tensor) => Eq (N tensor f '[]) where
+  Base u == Base v = u == v
+
+instance Eq (tensor (f x) (N tensor f xs)) => Eq (N tensor f (x:xs)) where
+  Step t1 == Step t2 = t1 == t2
+
+instance Ord (IdentityElement tensor) => Ord (N tensor f '[]) where
+  compare (Base u) (Base v) = compare u v
+
+instance Ord (tensor (f x) (N tensor f xs)) => Ord (N tensor f (x:xs)) where
+  compare (Step t1) (Step t2) = compare t1 t2
+
+instance Show (IdentityElement tensor) => Show (N tensor f '[]) where
+  showsPrec n (Base u) = showsPrec n u
+
+instance Show (tensor (f x) (N tensor f xs)) => Show (N tensor f (x:xs)) where
+  showsPrec n (Step t) = showsPrec n t
+
 nmap ::
   forall f g xs tensor.
   Bifunctor tensor =>
