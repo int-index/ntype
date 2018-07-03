@@ -89,11 +89,10 @@ instance Show (tensor (f x) (N tensor f xs)) => Show (N tensor f (x:xs)) where
   showsPrec n (Step t) = showsPrec n t
 
 nmap ::
-  forall f g xs tensor.
+  forall f g tensor.
   Bifunctor tensor =>
-  (forall a. f a -> g a) ->
-  N tensor f xs ->
-  N tensor g xs
+  (forall x. f x -> g x) ->
+  (forall xs. N tensor f xs -> N tensor g xs)
 nmap f = go
   where
     go :: forall xs'. N tensor f xs' -> N tensor g xs'
@@ -102,11 +101,10 @@ nmap f = go
       Step t -> Step (bimap f go t)
 
 nmapConstrained ::
-  forall c f g xs tensor.
-  (Bifunctor tensor, AllConstrained c xs) =>
-  (forall a. c a => f a -> g a) ->
-  N tensor f xs ->
-  N tensor g xs
+  forall c f g tensor.
+  Bifunctor tensor =>
+  (forall x. c x => f x -> g x) ->
+  (forall xs. AllConstrained c xs => N tensor f xs -> N tensor g xs)
 nmapConstrained f = go
   where
     go :: forall xs'. AllConstrained c xs' => N tensor f xs' -> N tensor g xs'
@@ -115,11 +113,10 @@ nmapConstrained f = go
       Step t -> Step (bimap f go t)
 
 nfold ::
-  forall f xs r tensor.
+  forall f r tensor.
   (Bifunctor tensor, MonoidOf tensor r) =>
   (forall x. f x -> r) ->
-  N tensor f xs ->
-  r
+  (forall xs. N tensor f xs -> r)
 nfold f = go
   where
     go :: forall xs'. N tensor f xs' -> r
@@ -127,11 +124,10 @@ nfold f = go
     go (Step t) = mu (bimap f go t)
 
 nfoldConstrained ::
-  forall c f xs r tensor.
-  (Bifunctor tensor, MonoidOf tensor r, AllConstrained c xs) =>
+  forall c f r tensor.
+  (Bifunctor tensor, MonoidOf tensor r) =>
   (forall x. c x => f x -> r) ->
-  N tensor f xs ->
-  r
+  (forall xs. AllConstrained c xs => N tensor f xs -> r)
 nfoldConstrained f = go
   where
     go :: forall xs'. AllConstrained c xs' => N tensor f xs' -> r
@@ -139,14 +135,12 @@ nfoldConstrained f = go
     go (Step t) = mu (bimap f go t)
 
 nlookup ::
-  forall f g xs r t1 t2.
+  forall f g r t1 t2.
   Bifunctor t1 =>
   (forall x. f x -> g x -> r) ->
   (IdentityElement t1 -> IdentityElement t2 -> r) ->
   (forall a b. t1 (a -> r) (b -> r) -> t2 a b -> r) ->
-  N t1 f xs ->
-  N t2 g xs ->
-  r
+  (forall xs. N t1 f xs -> N t2 g xs -> r)
 nlookup onMatch onBase onStep = go
   where
     go :: forall xs'. N t1 f xs' -> N t2 g xs' -> r
@@ -166,34 +160,29 @@ instance Monoid m => MonoidOf (,) m where
 type Rec = N (,)
 
 rmap ::
-  forall f g xs.
-  (forall a. f a -> g a) ->
-  Rec f xs ->
-  Rec g xs
+  forall f g.
+  (forall x. f x -> g x) ->
+  (forall xs. Rec f xs -> Rec g xs)
 rmap = nmap
 
 rmapConstrained ::
-  forall c f g xs.
-  AllConstrained c xs =>
-  (forall a. c a => f a -> g a) ->
-  Rec f xs ->
-  Rec g xs
+  forall c f g.
+  (forall x. c x => f x -> g x) ->
+  (forall xs. AllConstrained c xs => Rec f xs -> Rec g xs)
 rmapConstrained = nmapConstrained @c
 
 rfold ::
-  forall f xs r.
+  forall f r.
   Monoid r =>
   (forall x. f x -> r) ->
-  Rec f xs ->
-  r
+  (forall xs. Rec f xs -> r)
 rfold = nfold
 
 rfoldConstrained ::
-  forall c f xs r.
-  (Monoid r, AllConstrained c xs) =>
+  forall c f r.
+  Monoid r =>
   (forall x. c x => f x -> r) ->
-  Rec f xs ->
-  r
+  (forall xs. AllConstrained c xs => Rec f xs -> r)
 rfoldConstrained = nfoldConstrained @c
 
 rget :: forall f xs a. Elem xs a => Rec f xs -> f a
@@ -228,33 +217,27 @@ instance MonoidOf Either m where
 type Union = N Either
 
 umap ::
-  forall f g xs.
-  (forall a. f a -> g a) ->
-  Union f xs ->
-  Union g xs
+  forall f g.
+  (forall x. f x -> g x) ->
+  (forall xs. Union f xs -> Union g xs)
 umap = nmap
 
 umapConstrained ::
-  forall c f g xs.
-  AllConstrained c xs =>
-  (forall a. c a => f a -> g a) ->
-  Union f xs ->
-  Union g xs
+  forall c f g.
+  (forall x. c x => f x -> g x) ->
+  (forall xs. AllConstrained c xs => Union f xs -> Union g xs)
 umapConstrained = nmapConstrained @c
 
 ufold ::
-  forall f xs r.
+  forall f r.
   (forall x. f x -> r) ->
-  Union f xs ->
-  r
+  (forall xs. Union f xs -> r)
 ufold = nfold
 
 ufoldConstrained ::
-  forall c f xs r.
-  AllConstrained c xs =>
+  forall c f r.
   (forall x. c x => f x -> r) ->
-  Union f xs ->
-  r
+  (forall xs. AllConstrained c xs => Union f xs -> r)
 ufoldConstrained = nfoldConstrained @c
 
 umatch :: forall f xs a. Elem xs a => Union f xs -> Maybe (f a)
